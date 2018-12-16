@@ -2,10 +2,16 @@
 from urllib.request import FancyURLopener
 from urllib import parse
 from bs4 import BeautifulSoup
+from time import sleep
+import requests
 
 # 봇 탐지 우회를 위해서 user agent 변경
 class AppURLopener(FancyURLopener):
   version = 'Mozilla/5.0'
+
+# FancyURLopener로 해결 안됨
+# requests 사용해서 해결 시도
+headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36'}
 
 basicURL = 'https://land.naver.com/article/divisionInfo.nhn?'
 # -- query 정보
@@ -19,8 +25,10 @@ tradeTypeCd = 'B3'
 # 특정 지역(시/도)의 구 코드 가져와서 address에 저장
 
 # html = urlopen(basicURL + 'rletTypeCd=C01&tradeTypeCd=B3&hscpTypeCd=&cortarNo=4146500000&page=1')
-html = AppURLopener().open(basicURL + 'rletTypeCd=C01&tradeTypeCd=B3&hscpTypeCd=&cortarNo=4146500000&page=1')
+# html = AppURLopener().open(basicURL + 'rletTypeCd=C01&tradeTypeCd=B3&hscpTypeCd=&cortarNo=4146500000&page=1')
+html = requests.get(basicURL + 'rletTypeCd=C01&tradeTypeCd=B3&hscpTypeCd=&cortarNo=4146500000&page=1', headers=headers).text
 bsObject = BeautifulSoup(html, "html.parser")
+
 address = []
 for addr in bsObject.body.find('select', {'title': '시/군/구'}).find_all('option'):
   curAddr = {
@@ -36,8 +44,10 @@ for addr in address:
   # url querystring 만들기
   # query = 'rletTypeCd=' + rletTypeCd[0] + '&tradeTypeCd=' + tradeTypeCd + '&cortarNo=' + addr['code'] + '&page=1'
   query = 'rletTypeCd={}&trageTypeCd={}&cortarNo={}&page={}'.format(rletTypeCd[0], tradeTypeCd, addr['code'], 1)
+
   # html = urlopen(basicURL + query)
-  html = AppURLopener().open(basicURL + query)
+  # html = AppURLopener().open(basicURL + query)
+  html = requests.get(basicURL + query, headers=headers).text
   bsObject = BeautifulSoup(html, "html.parser")
   # print(bsObject)
 
@@ -53,7 +63,8 @@ for addr in address:
     # 각 하우스의 중개업소 정보
     for houseLink in houseLinks:
       # html = urlopen('https://land.naver.com' + houseLink)
-      html = AppURLopener().open('https://land.naver.com' + houseLink)
+      # html = AppURLopener().open('https://land.naver.com' + houseLink)
+      html = requests.get('https://land.naver.com' + houseLink, headers=headers).text
       houseObject = BeautifulSoup(html, "html.parser")
       houseInfo = houseObject.select('.view_info')
 
@@ -70,3 +81,7 @@ for addr in address:
     print(addr['name'] + ' 지역의 업체 연락처를 저장했습니다.')
   else:
     print('등록된 매물이 없습니다.')
+  
+  sleep(1)
+
+
